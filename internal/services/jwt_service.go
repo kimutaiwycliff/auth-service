@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -62,20 +63,24 @@ func (s *jwtService) ValidateRefreshToken(token string) (jwt.MapClaims, error) {
 func (s *jwtService) validateToken(token string) (jwt.MapClaims, error) {
 	parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, jwt.ErrSignatureInvalid
+				return nil, jwt.ErrSignatureInvalid
 		}
 		return []byte(s.secret), nil
-	})
+})
 
-	if err != nil {
+if err != nil {
 		return nil, err
-	}
+}
 
-	if claims, ok := parsedToken.Claims.(jwt.MapClaims); ok && parsedToken.Valid {
+if claims, ok := parsedToken.Claims.(jwt.MapClaims); ok && parsedToken.Valid {
+		// Verify the claims contain required fields
+		if _, ok := claims["sub"].(string); !ok {
+				return nil, errors.New("missing or invalid sub claim")
+		}
 		return claims, nil
-	}
+}
 
-	return nil, jwt.ErrInvalidKey
+return nil, jwt.ErrInvalidKey
 }
 
 func (s *jwtService) GetAccessExpiry() time.Duration {

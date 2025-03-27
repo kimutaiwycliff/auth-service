@@ -46,12 +46,20 @@ func (m *Middleware) AuthRequired(c *fiber.Ctx) error {
 		})
 	}
 
-	// Verify token
-	userID, err := m.jwtService.ValidateAccessToken(token)
+	// Verify token and get claims
+	claims, err := m.jwtService.ValidateAccessToken(token)
 	if err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid token",
-		})
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+					"error": "Invalid token",
+			})
+	}
+
+	// Properly extract userID from claims
+	userID, ok := claims["sub"].(string)
+	if !ok {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+					"error": "Invalid token claims",
+			})
 	}
 
 	// Store userID and token in context
